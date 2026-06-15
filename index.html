@@ -3,109 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Interview Prep Tool</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="Free AI-powered mock interview tool. Practice with any AI provider (Gemini, OpenAI, Groq, OpenRouter). Voice-enabled, real-time feedback, detailed scorecards.">
+    <title>AI Interview Prep — Free Mock Interview Tool</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- PDF.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
     </script>
+
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app">
         <header>
-            <h1>AI Interview Prep Tool</h1>
-            <p>Mock interviews powered by Gemini AI</p>
+            <h1>AI Interview Prep</h1>
+            <p class="subtitle">Practice mock interviews with any AI — voice-enabled, real-time feedback</p>
         </header>
 
-        <!-- STEP 1: SETUP -->
+        <!-- ═══════════════════════════════════════ -->
+        <!-- STEP 1: SETUP VIEW                      -->
+        <!-- ═══════════════════════════════════════ -->
         <section id="setup-view" class="view">
             <div class="card">
-                <h2>Interview Configuration</h2>
-                <div class="form-group">
-                    <label for="api-key">Gemini API Key (BYOK)</label>
-                    <input type="password" id="api-key" placeholder="Enter your Gemini API Key">
-                    <small>Your key is stored only in your browser's session.</small>
+                <h2>⚙️ Interview Setup</h2>
+
+                <!-- Provider & Model Selection -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="provider-select">AI Provider</label>
+                        <select id="provider-select">
+                            <!-- Populated dynamically by app.js -->
+                        </select>
+                        <div id="provider-info" class="provider-info"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="model-select">Model</label>
+                        <select id="model-select">
+                            <!-- Populated dynamically based on provider -->
+                        </select>
+                    </div>
                 </div>
+
+                <!-- API Key -->
                 <div class="form-group">
-                    <label for="resume-upload">Upload Resume (PDF)</label>
+                    <label for="api-key">API Key (BYOK — Bring Your Own Key)</label>
+                    <input type="password" id="api-key" placeholder="Enter your API key">
+                    <small id="key-hint">Your key is stored only in your browser session. <a id="key-link" href="#" target="_blank" rel="noopener">Get a key →</a></small>
+                </div>
+
+                <!-- Resume Upload -->
+                <div class="form-group">
+                    <label for="resume-upload">📄 Upload Resume (PDF)</label>
                     <input type="file" id="resume-upload" accept=".pdf">
+                    <small>Optional — helps the AI ask resume-specific questions</small>
                 </div>
+
+                <!-- Job Description -->
                 <div class="form-group">
-                    <label for="job-description">Job Description / Target Role</label>
-                    <textarea id="job-description" rows="5" placeholder="Paste the job description or enter the role (e.g., Frontend Engineer)"></textarea>
+                    <label for="job-description">💼 Job Description / Target Role</label>
+                    <textarea id="job-description" rows="5" placeholder="Paste the full job description, or just type the role (e.g., 'Senior Frontend Engineer at Google')"></textarea>
                 </div>
+
+                <!-- Past Scorecard (optional) -->
                 <div class="form-group">
-                    <label>Preferred Language</label>
-                    <select id="language-select">
-                        <option value="en-IN">English (India)</option>
-                        <option value="hi-IN">Hindi</option>
-                        <option value="en-US">English (US)</option>
-                        <option value="en-GB">English (UK)</option>
-                    </select>
+                    <label for="past-scorecard">📊 Past Scorecard (Optional)</label>
+                    <textarea id="past-scorecard" rows="3" placeholder="Paste a previous scorecard to focus on weak areas..."></textarea>
+                    <small>The AI will prioritize areas you previously scored low on</small>
                 </div>
-                <button id="start-btn" class="primary-btn">Start Mock Interview</button>
+
+                <!-- Language -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="language-select">🌐 Interview Language</label>
+                        <select id="language-select">
+                            <option value="en-IN">English (India)</option>
+                            <option value="en-US">English (US)</option>
+                            <option value="en-GB">English (UK)</option>
+                            <option value="hi-IN">Hindi</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-count">❓ Number of Questions</label>
+                        <select id="question-count">
+                            <option value="5">5 questions (Quick)</option>
+                            <option value="10" selected>10 questions (Standard)</option>
+                            <option value="15">15 questions (Thorough)</option>
+                            <option value="20">20 questions (Extensive)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="primary-btn">🎙️ Start Mock Interview</button>
             </div>
         </section>
 
-        <!-- STEP 2: INTERVIEW -->
+        <!-- ═══════════════════════════════════════ -->
+        <!-- STEP 2: INTERVIEW VIEW                  -->
+        <!-- ═══════════════════════════════════════ -->
         <section id="interview-view" class="view hidden">
             <div class="interview-container">
-                <div class="transcript-panel">
+                <!-- Transcript Panel -->
+                <div class="transcript-panel" id="transcript-panel">
                     <div id="transcript-messages"></div>
                     <div id="interim-container">
                         <p id="interim-text"></p>
                     </div>
                 </div>
-                
-                <div class="controls-panel">
-                    <div class="status-indicator">
-                        <span id="state-badge" class="badge">Initializing...</span>
-                        <div id="visualizer-container">
-                            <div id="visualizer-bar"></div>
-                        </div>
+
+                <!-- Voice Orb -->
+                <div class="voice-orb-container">
+                    <div class="voice-orb" id="voice-orb" data-state="idle">
+                        <div class="orb-ring"></div>
+                        <div class="orb-ring"></div>
+                        <div class="orb-ring"></div>
+                        <div class="orb-core" id="orb-core"></div>
                     </div>
-                    
-                    <div class="action-buttons">
+                </div>
+
+                <!-- Controls Panel -->
+                <div class="controls-panel">
+                    <div class="controls-row">
+                        <span id="state-badge" class="state-badge idle">IDLE</span>
+                        <span id="timer-display" class="question-counter"></span>
+                        <span id="question-counter" class="question-counter">Q 0/0</span>
+                    </div>
+
+                    <div class="controls-row">
                         <div class="toggle-group">
                             <label class="switch">
                                 <input type="checkbox" id="bargein-toggle" checked>
-                                <span class="slider round"></span>
+                                <span class="slider"></span>
                             </label>
-                            <span>Allow Interruption (Barge-in)</span>
+                            <span>Barge-in</span>
+                        </div>
+                        <div class="toggle-group">
+                            <label class="switch">
+                                <input type="checkbox" id="autosubmit-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Auto-submit</span>
                         </div>
                         <button id="end-btn" class="danger-btn">End Interview</button>
                     </div>
 
-                    <div class="manual-input">
+                    <div class="controls-row manual-input">
                         <input type="text" id="text-input-box" placeholder="Type your answer instead...">
-                        <button id="send-btn">Send</button>
+                        <button id="send-btn" class="primary-btn">Send</button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- STEP 3: SCORECARD -->
+        <!-- ═══════════════════════════════════════ -->
+        <!-- STEP 3: SCORECARD VIEW                  -->
+        <!-- ═══════════════════════════════════════ -->
         <section id="scorecard-view" class="view hidden">
             <div class="card">
-                <h2>Interview Scorecard</h2>
+                <div class="scorecard-header">
+                    <h2>📋 Interview Scorecard</h2>
+                    <div id="verdict-container"></div>
+                </div>
                 <div id="scorecard-content" class="markdown-body">
                     <p>Generating your performance report...</p>
                 </div>
                 <div class="scorecard-actions">
-                    <button id="download-btn" class="primary-btn">Download Report</button>
-                    <button id="restart-btn" class="secondary-btn">New Interview</button>
+                    <button id="download-btn" class="primary-btn">📥 Download Report</button>
+                    <button id="restart-btn" class="secondary-btn">🔄 New Interview</button>
                 </div>
             </div>
         </section>
 
+        <!-- Loading Overlay -->
         <div id="loading-overlay" class="hidden">
             <div class="spinner"></div>
             <p id="loading-text">Processing...</p>
         </div>
     </div>
 
+    <!-- Scripts: order matters (voice-engine first, then providers, pdf-helper, app) -->
     <script src="voice-engine.js"></script>
+    <script src="providers.js"></script>
     <script src="pdf-helper.js"></script>
     <script src="app.js"></script>
 </body>
